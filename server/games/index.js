@@ -19,7 +19,7 @@ export function createGame(gameType, gameId, config = {}) {
 	}
 }
 
-// Информация о доступных играх
+// Available games information
 export const GAME_INFO = {
 	[GAME_TYPES.SHOOTER]: {
 		id: GAME_TYPES.SHOOTER,
@@ -32,7 +32,7 @@ export const GAME_INFO = {
 	[GAME_TYPES.RACE]: {
 		id: GAME_TYPES.RACE,
 		name: 'Race Track',
-		description: 'Competitive racing game with checkpoints',
+		description: 'Competitive racing game with checkpoints and obstacles',
 		minPlayers: 1,
 		maxPlayers: 8,
 		icon: '🏎️',

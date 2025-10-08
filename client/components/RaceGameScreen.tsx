@@ -46,6 +46,7 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 	gameType,
 	onBack,
 }) => {
+	console.log('[RaceGameScreen] Rendering with:', { gameId, gameType });
 	const pixiContainer = useRef<HTMLDivElement>(null);
 	const appRef = useRef<PIXI.Application | null>(null);
 	const socketRef = useRef<Socket | null>(null);
@@ -122,9 +123,13 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 				socketRef.current = socket;
 
 				socket.on('connect', () => {
-					console.log('Race game screen connected to server');
+					console.log('[RaceGameScreen] Socket connected to server');
 					setConnectionStatus('connected');
 
+					console.log('[RaceGameScreen] Creating room:', {
+						gameType,
+						roomId: gameId,
+					});
 					socket!.emit('createRoom', {
 						gameType,
 						roomId: gameId,
@@ -136,7 +141,7 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 				});
 
 				socket.on('roomCreated', (data) => {
-					console.log('Race room created:', data);
+					console.log('[RaceGameScreen] Room created successfully:', data);
 				});
 
 				socket.on('disconnect', (reason) => {
@@ -257,7 +262,7 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 
 			// Speed indicator
 			const speedText = new PIXI.Text(
-				`${Math.round(Math.abs(player.speed))} км/ч`,
+				`${Math.round(Math.abs(player.speed))} km/h`,
 				{
 					fontFamily: 'Arial',
 					fontSize: 10,
@@ -282,7 +287,7 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 			playerContainer.addChild(nameText);
 
 			// Lap indicator
-			const lapText = new PIXI.Text(`Круг: ${player.lap}`, {
+			const lapText = new PIXI.Text(`Lap: ${player.lap}`, {
 				fontFamily: 'Arial',
 				fontSize: 8,
 				fill: 0xffff00,
@@ -377,13 +382,13 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 
 	return (
 		<div className="w-screen h-screen bg-gray-900 flex flex-col overflow-hidden fixed inset-0">
-			<div className="bg-gray-800/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between border-b border-gray-700/50">
+			<div className="bg-gray-800/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between border-b border-gray-700/50 flex-shrink-0">
 				<button
 					onClick={onBack}
 					className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors text-sm"
 				>
 					<ArrowLeft className="w-4 h-4" />
-					<span>Выйти</span>
+					<span>Exit</span>
 				</button>
 
 				<div className="flex items-center space-x-4 text-sm">
@@ -412,12 +417,12 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 						className="flex items-center space-x-1 text-blue-400 hover:text-blue-300 transition-colors"
 					>
 						<QrCode className="w-4 h-4" />
-						<span>Подключить</span>
+						<span>Connect</span>
 					</button>
 				</div>
 			</div>
 
-			<div className="flex-1 flex bg-gray-900 overflow-hidden">
+			<div className="flex-1 flex bg-gray-900 overflow-hidden min-h-0">
 				<div ref={pixiContainer} className="w-full h-full" />
 			</div>
 
@@ -425,9 +430,7 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 				<div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
 					<div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 border border-gray-700">
 						<div className="flex items-center justify-between mb-6">
-							<h2 className="text-xl font-bold text-white">
-								Подключить игроков
-							</h2>
+							<h2 className="text-xl font-bold text-white">Connect Players</h2>
 							<button
 								onClick={() => setShowQRPopup(false)}
 								className="text-gray-400 hover:text-white transition-colors"
@@ -442,7 +445,7 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 							<div className="mt-6">
 								<h3 className="text-lg font-semibold text-white mb-3 flex items-center">
 									<Flag className="w-5 h-5 mr-2" />
-									Лидерборд
+									Leaderboard
 								</h3>
 								<div className="space-y-2 max-h-48 overflow-y-auto">
 									{sortedPlayers.map((player, index) => (
@@ -463,7 +466,7 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 												</span>
 											</div>
 											<div className="text-xs text-yellow-400">
-												Круг {player.lap}
+												Lap {player.lap}
 											</div>
 										</div>
 									))}

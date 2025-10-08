@@ -1,0 +1,45 @@
+# OSG Project Rules for Cursor IDE
+
+## Language and Localization
+
+- **ALL code comments MUST be in English**
+- **ALL variable names, function names, and identifiers MUST be in English**
+- **ALL commit messages MUST be in English**
+- **ALL documentation MUST be in English**
+- User-facing text (UI labels, messages, etc.) should be in Russian
+- Keep code and comments separate from UI text
+
+## Communication Style
+
+- **DO NOT create summary files or "what was done" documents**
+- **DO NOT generate change logs or progress reports unless explicitly requested**
+- Keep responses concise and action-oriented
+- Focus on code and implementation, not documentation of changes
+
+## Code Style
+
+- Use TypeScript for all new files in the client
+- Use ES6+ features and modern JavaScript patterns
+- Follow existing project structure and naming conventions
+- Prefer functional components and hooks in React
+
+## Project Structure
+
+- Client code goes in `/client` directory
+- Server code goes in `/server` directory
+- Shared types and interfaces should be clearly documented
+- Keep game logic separate from UI components
+
+## Development Workflow
+
+- Test changes before committing
+- Ensure both client and server run without errors
+- Check for TypeScript errors before considering work complete
+- Maintain consistency with existing code patterns
+
+## Specific Rules
+
+- No Russian in code, comments, or variable names
+- No auto-generated summary documents
+- No "changes applied" or "what I did" files
+- Focus on writing code, not documenting what you wrote

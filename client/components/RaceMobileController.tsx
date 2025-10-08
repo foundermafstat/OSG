@@ -339,7 +339,7 @@ const RaceMobileController: React.FC<RaceMobileControllerProps> = ({
 					<div className="flex items-center space-x-3 text-sm">
 						<div className="flex items-center space-x-1 text-yellow-400">
 							<Trophy className="w-4 h-4" />
-							<span>Круг {playerData?.lap || 0}</span>
+							<span>Lap {playerData?.lap || 0}</span>
 						</div>
 						<div className="flex items-center space-x-1 text-green-400">
 							<Wifi className="w-4 h-4" />
@@ -351,11 +351,11 @@ const RaceMobileController: React.FC<RaceMobileControllerProps> = ({
 				{playerData && (
 					<div className="mt-2 bg-gray-800/50 rounded-lg p-2">
 						<div className="flex items-center justify-between mb-1">
-							<span className="text-xs text-gray-400">Скорость</span>
+							<span className="text-xs text-gray-400">Speed</span>
 							<div className="flex items-center space-x-1">
 								<Gauge className="w-3 h-3 text-blue-400" />
 								<span className="text-xs text-white font-bold">
-									{Math.round(Math.abs(playerData.speed))} км/ч
+									{Math.round(Math.abs(playerData.speed))} km/h
 								</span>
 							</div>
 						</div>

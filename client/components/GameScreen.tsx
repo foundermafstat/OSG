@@ -72,6 +72,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
 	gameType,
 	onBack,
 }) => {
+	console.log('[GameScreen] Rendering with:', { gameId, gameType });
 	const pixiContainer = useRef<HTMLDivElement>(null);
 	const appRef = useRef<PIXI.Application | null>(null);
 	const socketRef = useRef<Socket | null>(null);
@@ -199,10 +200,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
 				// Socket event handlers
 				socket.on('connect', () => {
-					console.log('Game screen connected to server');
+					console.log('[GameScreen] Socket connected to server');
 					setConnectionStatus('connected');
 
 					// Create room and join
+					console.log('[GameScreen] Creating room:', {
+						gameType,
+						roomId: gameId,
+					});
 					socket.emit('createRoom', {
 						gameType,
 						roomId: gameId,
@@ -211,11 +216,11 @@ const GameScreen: React.FC<GameScreenProps> = ({
 							worldHeight: screenHeight,
 						},
 					});
-					console.log(`Creating room ${gameId} with type ${gameType}`);
+					console.log(`[GameScreen] Room creation request sent`);
 				});
 
 				socket.on('roomCreated', (data) => {
-					console.log('Room created:', data);
+					console.log('[GameScreen] Room created successfully:', data);
 					// Send screen dimensions to server
 					if (socket) {
 						socket.emit('screenDimensions', {
@@ -223,7 +228,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
 							height: screenHeight,
 						});
 						console.log(
-							`Sent screen dimensions to server: ${screenWidth}x${screenHeight}`
+							`[GameScreen] Sent screen dimensions: ${screenWidth}x${screenHeight}`
 						);
 					}
 				});
@@ -1064,7 +1069,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
 	return (
 		<div className="w-screen h-screen bg-gray-900 flex flex-col overflow-hidden fixed inset-0">
 			{/* Minimal Header */}
-			<div className="bg-gray-800/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between border-b border-gray-700/50">
+			<div className="bg-gray-800/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between border-b border-gray-700/50 flex-shrink-0">
 				<button
 					onClick={onBack}
 					className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors text-sm"
@@ -1109,7 +1114,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
 			</div>
 
 			{/* Game Canvas - Full Screen */}
-			<div className="flex-1 flex bg-gray-900 overflow-hidden">
+			<div className="flex-1 flex bg-gray-900 overflow-hidden min-h-0">
 				<div ref={pixiContainer} className="w-full h-full" />
 			</div>
 
