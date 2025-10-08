@@ -17,6 +17,7 @@ import { ENV_CONFIG } from '../env.config';
 
 interface MobileControllerProps {
 	gameId: string;
+	gameType: string;
 }
 
 interface PlayerData {
@@ -31,7 +32,10 @@ interface PlayerData {
 	isMoving?: boolean;
 }
 
-const MobileController: React.FC<MobileControllerProps> = ({ gameId }) => {
+const MobileController: React.FC<MobileControllerProps> = ({
+	gameId,
+	gameType,
+}) => {
 	const [connected, setConnected] = useState(false);
 	const [playerName, setPlayerName] = useState('');
 	const [isJoined, setIsJoined] = useState(false);
@@ -171,8 +175,11 @@ const MobileController: React.FC<MobileControllerProps> = ({ gameId }) => {
 
 	const joinGame = () => {
 		if (socketRef.current && playerName.trim() && connected) {
-			console.log('Attempting to join game with name:', playerName.trim());
-			socketRef.current.emit('joinGame', playerName.trim());
+			console.log('Attempting to join room with name:', playerName.trim());
+			socketRef.current.emit('joinRoom', {
+				roomId: gameId,
+				playerName: playerName.trim(),
+			});
 		}
 	};
 
@@ -396,7 +403,7 @@ const MobileController: React.FC<MobileControllerProps> = ({ gameId }) => {
 							<Gamepad2 className="w-8 h-8 text-white" />
 						</div>
 						<h1 className="text-2xl font-bold text-white mb-2">
-							Join QR Party
+							Join in One Screen Games
 						</h1>
 						<p className="text-gray-300">Enter your player name</p>
 

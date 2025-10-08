@@ -63,10 +63,15 @@ interface InteractiveObject {
 
 interface GameScreenProps {
 	gameId: string;
+	gameType: string;
 	onBack: () => void;
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ gameId, onBack }) => {
+const GameScreen: React.FC<GameScreenProps> = ({
+	gameId,
+	gameType,
+	onBack,
+}) => {
 	const pixiContainer = useRef<HTMLDivElement>(null);
 	const appRef = useRef<PIXI.Application | null>(null);
 	const socketRef = useRef<Socket | null>(null);
@@ -197,6 +202,20 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameId, onBack }) => {
 					console.log('Game screen connected to server');
 					setConnectionStatus('connected');
 
+					// Create room and join
+					socket.emit('createRoom', {
+						gameType,
+						roomId: gameId,
+						config: {
+							worldWidth: screenWidth,
+							worldHeight: screenHeight,
+						},
+					});
+					console.log(`Creating room ${gameId} with type ${gameType}`);
+				});
+
+				socket.on('roomCreated', (data) => {
+					console.log('Room created:', data);
 					// Send screen dimensions to server
 					if (socket) {
 						socket.emit('screenDimensions', {
@@ -1040,7 +1059,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ gameId, onBack }) => {
 	};
 
 	// Use local IP with client port for QR code from env config
-	const controllerUrl = `http://${ENV_CONFIG.LOCAL_IP}:${ENV_CONFIG.CLIENT_PORT}?mode=controller&id=${gameId}`;
+	const controllerUrl = `http://${ENV_CONFIG.LOCAL_IP}:${ENV_CONFIG.CLIENT_PORT}/game/${gameType}?mode=controller&roomId=${gameId}`;
 
 	return (
 		<div className="w-screen h-screen bg-gray-900 flex flex-col overflow-hidden fixed inset-0">

@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-	title: 'QR Party - Multiplayer Game',
-	description: 'Multiplayer gaming with mobile controllers',
+	title: 'OSG - One Screen Games',
+	description: 'Transform any screen into an instant multiplayer arena. Your phone becomes the controller. No downloads. No installations. Just scan and play.',
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="ru">
+		<html lang="en">
 			<body className="antialiased">{children}</body>
 		</html>
 	);
