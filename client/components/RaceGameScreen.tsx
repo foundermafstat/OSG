@@ -54,7 +54,6 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 	const playersRef = useRef<Map<string, PIXI.Container>>(new Map());
 	const checkpointsRef = useRef<PIXI.Graphics[]>([]);
 	const obstaclesRef = useRef<PIXI.Graphics[]>([]);
-	const initializingRef = useRef(false);
 	const [connectedPlayers, setConnectedPlayers] = useState<Player[]>([]);
 	const [showQRPopup, setShowQRPopup] = useState(false);
 	const [connectionStatus, setConnectionStatus] = useState<
@@ -62,27 +61,54 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 	>('connecting');
 
 	useEffect(() => {
-		if (initializingRef.current) return;
-		initializingRef.current = true;
+		// Prevent multiple initializations
+		if (appRef.current) {
+			console.log(
+				'[RaceGameScreen] App already exists, skipping initialization'
+			);
+			return;
+		}
+
+		console.log('[RaceGameScreen] Starting initialization for:', {
+			gameId,
+			gameType,
+		});
 
 		let socket: Socket | null = null;
-		let resizeHandler: (() => void) | null = null;
 
 		const initPixi = async () => {
 			try {
+				console.log('[RaceGameScreen] Waiting for next frame...');
+				await new Promise((resolve) => requestAnimationFrame(resolve));
+				// Wait one more frame to ensure all styles are applied
 				await new Promise((resolve) => requestAnimationFrame(resolve));
 
 				const containerElement = pixiContainer.current;
-				if (!containerElement) return;
-
-				let screenWidth = containerElement.clientWidth;
-				let screenHeight = containerElement.clientHeight;
-
-				if (screenWidth === 0 || screenHeight === 0) {
-					screenWidth = window.innerWidth;
-					screenHeight = window.innerHeight;
+				console.log(
+					'[RaceGameScreen] Container element:',
+					containerElement,
+					'exists:',
+					!!containerElement
+				);
+				if (!containerElement) {
+					console.error('[RaceGameScreen] Container element not found!');
+					return;
 				}
 
+				// Calculate proper dimensions
+				// For the game screen, we want full window minus header height
+				const headerHeight = 50;
+				const screenWidth = window.innerWidth;
+				const screenHeight = window.innerHeight - headerHeight;
+
+				console.log(
+					'[RaceGameScreen] Final dimensions:',
+					screenWidth,
+					'x',
+					screenHeight
+				);
+
+				console.log('[RaceGameScreen] Creating PIXI Application...');
 				const app = new PIXI.Application();
 				await app.init({
 					width: screenWidth,
@@ -90,29 +116,42 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 					backgroundColor: 0x2c3e50,
 					antialias: true,
 				});
-
-				resizeHandler = () => {
-					if (pixiContainer.current) {
-						const newWidth = pixiContainer.current.clientWidth;
-						const newHeight = pixiContainer.current.clientHeight;
-						app.renderer.resize(newWidth, newHeight);
-					}
-				};
-				window.addEventListener('resize', resizeHandler);
+				console.log('[RaceGameScreen] PIXI Application created successfully');
 
 				if (pixiContainer.current) {
+					// Clear any existing canvases first
+					while (pixiContainer.current.firstChild) {
+						pixiContainer.current.removeChild(pixiContainer.current.firstChild);
+					}
+
+					// Set canvas to exact pixel dimensions
 					app.canvas.style.display = 'block';
-					app.canvas.style.width = '100%';
-					app.canvas.style.height = '100%';
+					app.canvas.style.width = `${screenWidth}px`;
+					app.canvas.style.height = `${screenHeight}px`;
+					app.canvas.style.position = 'absolute';
+					app.canvas.style.top = '0';
+					app.canvas.style.left = '0';
+
+					console.log('[RaceGameScreen] Appending canvas to container...');
 					pixiContainer.current.appendChild(app.canvas);
+					console.log('[RaceGameScreen] Canvas appended successfully');
+					console.log(
+						'[RaceGameScreen] Canvas final bounds:',
+						app.canvas.getBoundingClientRect()
+					);
+				} else {
+					console.error('[RaceGameScreen] Container lost between checks!');
+					return;
 				}
 				appRef.current = app;
 
 				const gameContainer = new PIXI.Container();
 				app.stage.addChild(gameContainer);
 				gameContainerRef.current = gameContainer;
+				console.log('[RaceGameScreen] Game container created');
 
 				// Initialize socket
+				console.log('[RaceGameScreen] Initializing socket connection...');
 				socket = io(`http://${ENV_CONFIG.LOCAL_IP}:${ENV_CONFIG.SERVER_PORT}`, {
 					transports: ['websocket', 'polling'],
 					timeout: 5000,
@@ -189,24 +228,26 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 					}
 				});
 			} catch (error) {
-				console.error('Error initializing:', error);
+				console.error('[RaceGameScreen] Error initializing:', error);
 			}
 		};
 
+		console.log('[RaceGameScreen] Calling initPixi...');
 		initPixi();
 
 		return () => {
+			console.log('[RaceGameScreen] Cleanup called');
 			if (socket) socket.disconnect();
-			if (resizeHandler) {
-				window.removeEventListener('resize', resizeHandler);
-			}
 			if (appRef.current) {
 				appRef.current.destroy({ removeView: true });
 				appRef.current = null;
 			}
 			gameContainerRef.current = null;
+			playersRef.current.clear();
+			checkpointsRef.current = [];
+			obstaclesRef.current = [];
 		};
-	}, []);
+	}, [gameId, gameType]);
 
 	const updatePlayers = (players: Player[], container: PIXI.Container) => {
 		// Remove disconnected players
@@ -381,8 +422,8 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 	const sortedPlayers = [...connectedPlayers].sort((a, b) => b.lap - a.lap);
 
 	return (
-		<div className="w-screen h-screen bg-gray-900 flex flex-col overflow-hidden fixed inset-0">
-			<div className="bg-gray-800/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between border-b border-gray-700/50 flex-shrink-0">
+		<div className="fixed inset-0 w-full h-full bg-gray-900 flex flex-col overflow-hidden z-50">
+			<div className="bg-gray-800/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between border-b border-gray-700/50 flex-shrink-0 z-10">
 				<button
 					onClick={onBack}
 					className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors text-sm"
@@ -422,8 +463,15 @@ const RaceGameScreen: React.FC<RaceGameScreenProps> = ({
 				</div>
 			</div>
 
-			<div className="flex-1 flex bg-gray-900 overflow-hidden min-h-0">
-				<div ref={pixiContainer} className="w-full h-full" />
+			<div
+				className="flex-1 relative bg-gray-900 overflow-hidden"
+				style={{ minHeight: 0 }}
+			>
+				<div
+					ref={pixiContainer}
+					className="absolute inset-0"
+					style={{ width: '100%', height: '100%' }}
+				/>
 			</div>
 
 			{showQRPopup && (

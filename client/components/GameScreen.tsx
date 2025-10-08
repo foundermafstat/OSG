@@ -82,7 +82,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
 	const botsRef = useRef<Map<string, PIXI.Container>>(new Map());
 	const obstaclesRef = useRef<PIXI.Graphics[]>([]);
 	const interactiveObjectsRef = useRef<Map<string, PIXI.Container>>(new Map());
-	const initializingRef = useRef(false);
 	const [connectedPlayers, setConnectedPlayers] = useState<Player[]>([]);
 	const [gameStats, setGameStats] = useState({
 		totalKills: 0,
@@ -94,44 +93,48 @@ const GameScreen: React.FC<GameScreenProps> = ({
 	>('connecting');
 
 	useEffect(() => {
-		// Prevent multiple initializations (React Strict Mode calls useEffect twice in dev)
-		if (initializingRef.current) {
-			console.log('Already initializing, skipping...');
+		// Prevent multiple initializations
+		if (appRef.current) {
+			console.log('[GameScreen] App already exists, skipping initialization');
 			return;
 		}
 
-		initializingRef.current = true;
-		console.log('useEffect called - starting initialization');
+		console.log('[GameScreen] Starting initialization...');
 
 		let socket: Socket | null = null;
-		let resizeHandler: (() => void) | null = null;
 
 		// Initialize PIXI (async in v8)
 		const initPixi = async () => {
 			try {
-				console.log('Starting Pixi.js initialization...');
+				console.log('[GameScreen] Starting Pixi.js initialization...');
 
 				// Wait for next frame to ensure layout is complete
+				await new Promise((resolve) => requestAnimationFrame(resolve));
+				// Wait one more frame to ensure all styles are applied
 				await new Promise((resolve) => requestAnimationFrame(resolve));
 
 				// Get actual container dimensions instead of window dimensions
 				const containerElement = pixiContainer.current;
 				if (!containerElement) {
-					console.error('Container element not found');
+					console.error('[GameScreen] Container element not found');
 					return;
 				}
 
-				let screenWidth = containerElement.clientWidth;
-				let screenHeight = containerElement.clientHeight;
+				console.log('[GameScreen] Container element found:', {
+					width: containerElement.clientWidth,
+					height: containerElement.clientHeight,
+					childrenCount: containerElement.children.length,
+				});
 
-				// Fallback if container doesn't have dimensions yet
-				if (screenWidth === 0 || screenHeight === 0) {
-					console.warn('Container dimensions are 0, using window size');
-					screenWidth = window.innerWidth;
-					screenHeight = window.innerHeight;
-				}
+				// Calculate proper dimensions
+				// For the game screen, we want full window minus header height (approx 37px)
+				const headerHeight = 50; // Header height
+				const screenWidth = window.innerWidth;
+				const screenHeight = window.innerHeight - headerHeight;
 
-				console.log(`Using screen size: ${screenWidth}x${screenHeight}`);
+				console.log(
+					`[GameScreen] Using screen size: ${screenWidth}x${screenHeight} (window: ${window.innerWidth}x${window.innerHeight})`
+				);
 
 				const app = new PIXI.Application();
 				await app.init({
@@ -140,29 +143,36 @@ const GameScreen: React.FC<GameScreenProps> = ({
 					backgroundColor: 0x0a0a0a,
 					antialias: true,
 				});
-				console.log('Pixi.js initialized successfully');
-
-				// Handle window resize - note: server boundaries don't change dynamically
-				// If you want to support resize, reload the page or reconnect
-				resizeHandler = () => {
-					if (pixiContainer.current) {
-						const newWidth = pixiContainer.current.clientWidth;
-						const newHeight = pixiContainer.current.clientHeight;
-						app.renderer.resize(newWidth, newHeight);
-						console.log(
-							`Canvas resized to ${newWidth}x${newHeight} - Note: Game boundaries remain at initial size`
-						);
-					}
-				};
-				window.addEventListener('resize', resizeHandler);
+				console.log('[GameScreen] Pixi.js initialized successfully');
+				console.log('[GameScreen] Canvas dimensions:', {
+					width: app.canvas.width,
+					height: app.canvas.height,
+					style: app.canvas.style.cssText,
+				});
 
 				if (pixiContainer.current) {
-					// Ensure canvas fits perfectly in container
+					// Clear any existing canvases first
+					while (pixiContainer.current.firstChild) {
+						pixiContainer.current.removeChild(pixiContainer.current.firstChild);
+					}
+
+					// Set canvas to exact pixel dimensions
 					app.canvas.style.display = 'block';
-					app.canvas.style.width = '100%';
-					app.canvas.style.height = '100%';
+					app.canvas.style.width = `${screenWidth}px`;
+					app.canvas.style.height = `${screenHeight}px`;
+					app.canvas.style.position = 'absolute';
+					app.canvas.style.top = '0';
+					app.canvas.style.left = '0';
+
 					pixiContainer.current.appendChild(app.canvas);
-					console.log('Canvas added to DOM');
+					console.log('[GameScreen] Canvas added to DOM');
+					console.log(
+						'[GameScreen] Canvas final bounds:',
+						app.canvas.getBoundingClientRect()
+					);
+				} else {
+					console.error('[GameScreen] Container lost between checks!');
+					return;
 				}
 				appRef.current = app;
 
@@ -360,17 +370,20 @@ const GameScreen: React.FC<GameScreenProps> = ({
 		initPixi();
 
 		return () => {
+			console.log('[GameScreen] Cleanup called');
 			if (socket) socket.disconnect();
-			if (resizeHandler) {
-				window.removeEventListener('resize', resizeHandler);
-			}
 			if (appRef.current) {
 				appRef.current.destroy({ removeView: true });
 				appRef.current = null;
 			}
 			gameContainerRef.current = null;
+			playersRef.current.clear();
+			bulletsRef.current.clear();
+			botsRef.current.clear();
+			obstaclesRef.current = [];
+			interactiveObjectsRef.current.clear();
 		};
-	}, []);
+	}, [gameId, gameType]);
 
 	const createDirectionIndicator = (
 		aimDirection: { x: number; y: number },
@@ -1067,9 +1080,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
 	const controllerUrl = `http://${ENV_CONFIG.LOCAL_IP}:${ENV_CONFIG.CLIENT_PORT}/game/${gameType}?mode=controller&roomId=${gameId}`;
 
 	return (
-		<div className="w-screen h-screen bg-gray-900 flex flex-col overflow-hidden fixed inset-0">
+		<div className="fixed inset-0 w-full h-full bg-gray-900 flex flex-col overflow-hidden z-50">
 			{/* Minimal Header */}
-			<div className="bg-gray-800/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between border-b border-gray-700/50 flex-shrink-0">
+			<div className="bg-gray-800/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between border-b border-gray-700/50 flex-shrink-0 z-10">
 				<button
 					onClick={onBack}
 					className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors text-sm"
@@ -1114,8 +1127,15 @@ const GameScreen: React.FC<GameScreenProps> = ({
 			</div>
 
 			{/* Game Canvas - Full Screen */}
-			<div className="flex-1 flex bg-gray-900 overflow-hidden min-h-0">
-				<div ref={pixiContainer} className="w-full h-full" />
+			<div
+				className="flex-1 relative bg-gray-900 overflow-hidden"
+				style={{ minHeight: 0 }}
+			>
+				<div
+					ref={pixiContainer}
+					className="absolute inset-0"
+					style={{ width: '100%', height: '100%' }}
+				/>
 			</div>
 
 			{/* QR Code Popup */}

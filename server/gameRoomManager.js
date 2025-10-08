@@ -59,10 +59,15 @@ export class GameRoomManager {
 		const room = this.rooms.get(roomId);
 		if (!room) return null;
 
-		// Удаляем игрока из игры
-		room.game.removePlayer(socketId);
+		// Check if this socket is a player or just a screen
+		const isPlayer = room.game.players.has(socketId);
 
-		// Удаляем сокет из комнаты
+		if (isPlayer) {
+			// Remove player from game
+			room.game.removePlayer(socketId);
+		}
+
+		// Remove socket from room
 		room.sockets.forEach((s) => {
 			if (s.id === socketId) {
 				room.sockets.delete(s);
@@ -71,12 +76,15 @@ export class GameRoomManager {
 
 		this.playerToRoom.delete(socketId);
 
-		// Если комната пустая, закрываем её
-		if (room.sockets.size === 0) {
+		// Only close room if no players left (not just no sockets)
+		// This allows the game screen to stay open even if all players disconnect
+		if (room.game.players.size === 0 && room.sockets.size === 0) {
 			this.closeRoom(roomId);
 		}
 
-		console.log(`Player ${socketId} left room ${roomId}`);
+		console.log(
+			`Socket ${socketId} left room ${roomId}, isPlayer: ${isPlayer}`
+		);
 		return roomId;
 	}
 

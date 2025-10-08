@@ -58,12 +58,23 @@ io.on('connection', (socket) => {
 	socket.on('createRoom', ({ gameType, roomId, config }) => {
 		try {
 			const game = roomManager.createRoom(roomId, gameType, config);
+
+			// Add the game screen socket to the room so it receives gameState
+			const room = roomManager.getRoom(roomId);
+			if (room) {
+				room.sockets.add(socket);
+				// Also track this socket-room relationship
+				roomManager.playerToRoom.set(socket.id, roomId);
+			}
+
 			socket.emit('roomCreated', {
 				roomId,
 				gameType,
 				gameInfo: game.getGameInfo(),
 			});
-			console.log(`Room ${roomId} created with type ${gameType}`);
+			console.log(
+				`Room ${roomId} created with type ${gameType}, screen connected`
+			);
 		} catch (error) {
 			socket.emit('error', { message: error.message });
 			console.error('Error creating room:', error);

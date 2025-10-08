@@ -322,7 +322,7 @@ const RaceMobileController: React.FC<RaceMobileControllerProps> = ({
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex flex-col">
+		<div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-gray-900 to-black flex flex-col overflow-hidden z-50">
 			{/* Header */}
 			<div className="bg-black/50 backdrop-blur-lg px-4 py-3 border-b border-gray-700">
 				<div className="flex items-center justify-between">
