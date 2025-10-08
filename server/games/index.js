@@ -1,10 +1,12 @@
 import { ShooterGame } from './shooterGame.js';
 import { RaceGame } from './raceGame.js';
+import { TowerDefenceGame } from './towerDefenceGame.js';
 
 // Реестр доступных игр
 export const GAME_TYPES = {
 	SHOOTER: 'shooter',
 	RACE: 'race',
+	TOWERDEFENCE: 'towerdefence',
 };
 
 // Фабрика для создания игр
@@ -14,6 +16,8 @@ export function createGame(gameType, gameId, config = {}) {
 			return new ShooterGame(gameId, config);
 		case GAME_TYPES.RACE:
 			return new RaceGame(gameId, config);
+		case GAME_TYPES.TOWERDEFENCE:
+			return new TowerDefenceGame(gameId, config);
 		default:
 			throw new Error(`Unknown game type: ${gameType}`);
 	}
@@ -36,5 +40,14 @@ export const GAME_INFO = {
 		minPlayers: 1,
 		maxPlayers: 8,
 		icon: '🏎️',
+	},
+	[GAME_TYPES.TOWERDEFENCE]: {
+		id: GAME_TYPES.TOWERDEFENCE,
+		name: 'Tower Defence',
+		description:
+			'Defend your castle from waves of enemies with strategic tower placement',
+		minPlayers: 1,
+		maxPlayers: 4,
+		icon: '🏰',
 	},
 };

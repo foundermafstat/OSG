@@ -17,6 +17,73 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
+// Dynamic imports to prevent SSR issues
+const GameScreen = dynamic(() => import('@/components/GameScreen'), {
+	ssr: false,
+	loading: () => (
+		<div className="min-h-screen bg-gray-900 flex items-center justify-center">
+			<div className="text-white text-xl">Loading game...</div>
+		</div>
+	),
+});
+
+const MobileController = dynamic(
+	() => import('@/components/MobileController'),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="min-h-screen bg-gray-900 flex items-center justify-center">
+				<div className="text-white text-xl">Loading controller...</div>
+			</div>
+		),
+	}
+);
+
+const RaceGameScreen = dynamic(() => import('@/components/RaceGameScreen'), {
+	ssr: false,
+	loading: () => (
+		<div className="min-h-screen bg-gray-900 flex items-center justify-center">
+			<div className="text-white text-xl">Loading race...</div>
+		</div>
+	),
+});
+
+const RaceMobileController = dynamic(
+	() => import('@/components/RaceMobileController'),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="min-h-screen bg-gray-900 flex items-center justify-center">
+				<div className="text-white text-xl">Loading controller...</div>
+			</div>
+		),
+	}
+);
+
+const TowerDefenceGameScreen = dynamic(
+	() => import('@/components/TowerDefenceGameScreen'),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="min-h-screen bg-gray-900 flex items-center justify-center">
+				<div className="text-white text-xl">Loading tower defence...</div>
+			</div>
+		),
+	}
+);
+
+const TowerDefenceMobileController = dynamic(
+	() => import('@/components/TowerDefenceMobileController'),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="min-h-screen bg-gray-900 flex items-center justify-center">
+				<div className="text-white text-xl">Loading controller...</div>
+			</div>
+		),
+	}
+);
+
 // Dynamic import only for QR code component (non-critical)
 const QRCodeDisplay = dynamic(
 	() => import('../../../components/QRCodeDisplay'),
@@ -57,6 +124,18 @@ interface GameState {
 	obstacles?: any[];
 	interactiveObjects?: any[];
 	checkpoints?: any[];
+	// Tower Defence specific
+	towers?: any[];
+	mobs?: any[];
+	projectiles?: any[];
+	path?: any[];
+	buildSpots?: any[];
+	castle?: any;
+	wave?: number;
+	money?: number;
+	isWaveActive?: boolean;
+	nextWaveIn?: number;
+	gameOver?: boolean;
 }
 
 export default function GamePage({ params }: PageProps) {
@@ -73,6 +152,14 @@ export default function GamePage({ params }: PageProps) {
 	const checkpointsRef = useRef<PIXI.Graphics[]>([]);
 	const interactiveObjectsRef = useRef<Map<string, PIXI.Container>>(new Map());
 
+	// Tower Defence specific refs
+	const towersMapRef = useRef<Map<string, PIXI.Container>>(new Map());
+	const mobsMapRef = useRef<Map<string, PIXI.Container>>(new Map());
+	const projectilesMapRef = useRef<Map<string, PIXI.Graphics>>(new Map());
+	const buildSpotsRef = useRef<PIXI.Graphics[]>([]);
+	const pathGraphicRef = useRef<PIXI.Graphics | null>(null);
+	const castleGraphicRef = useRef<PIXI.Container | null>(null);
+
 	const [currentView, setCurrentView] = useState<'game' | 'controller'>('game');
 	const [roomId, setRoomId] = useState<string>('');
 	const [isInitialized, setIsInitialized] = useState(false);
@@ -85,6 +172,15 @@ export default function GamePage({ params }: PageProps) {
 	const [connectionStatus, setConnectionStatus] = useState<
 		'connecting' | 'connected' | 'disconnected'
 	>('connecting');
+
+	// Tower Defence specific state
+	const [tdState, setTdState] = useState({
+		wave: 0,
+		money: 0,
+		castleHealth: 100,
+		gameOver: false,
+		selectedSpot: null as string | null,
+	});
 
 	// Initialize room ID from URL
 	useEffect(() => {
@@ -99,10 +195,10 @@ export default function GamePage({ params }: PageProps) {
 			gameType: resolvedParams.gameType,
 		});
 
-		setRoomId(id);
-		if (mode === 'controller') {
-			setCurrentView('controller');
-		}
+			setRoomId(id);
+			if (mode === 'controller') {
+				setCurrentView('controller');
+			}
 		setIsInitialized(true);
 	}, [searchParams, resolvedParams.gameType]);
 
@@ -143,7 +239,13 @@ export default function GamePage({ params }: PageProps) {
 				width: screenWidth,
 				height: screenHeight,
 				backgroundColor:
-					resolvedParams.gameType === 'shooter' ? 0x0a0a0a : 0x2c3e50,
+					resolvedParams.gameType === 'shooter'
+						? 0x0a0a0a
+						: resolvedParams.gameType === 'race'
+						? 0x2c3e50
+						: resolvedParams.gameType === 'towerdefence'
+						? 0x1a2332
+						: 0x0a0a0a,
 				antialias: true,
 			});
 
@@ -267,6 +369,9 @@ export default function GamePage({ params }: PageProps) {
 						updateCheckpoints(state.checkpoints, gameContainerRef.current);
 					if (state.obstacles)
 						updateRaceObstacles(state.obstacles, gameContainerRef.current);
+				} else if (resolvedParams.gameType === 'towerdefence') {
+					// Tower Defence is handled by separate component
+					// This shouldn't be reached as TD uses TowerDefenceGameScreen
 				}
 			});
 
@@ -584,14 +689,34 @@ export default function GamePage({ params }: PageProps) {
 
 	// Controller view (redirect to controller component)
 	if (currentView === 'controller') {
-		// Load controller dynamically
+		// Load controller dynamically based on game type
+		if (resolvedParams.gameType === 'towerdefence') {
+	return (
+				<TowerDefenceMobileController
+					gameId={roomId}
+					gameType={resolvedParams.gameType}
+				/>
+			);
+		}
+
 		const ControllerComponent =
 			resolvedParams.gameType === 'race'
-				? require('../../../components/RaceMobileController').default
-				: require('../../../components/MobileController').default;
+				? RaceMobileController
+				: MobileController;
 
 		return (
 			<ControllerComponent gameId={roomId} gameType={resolvedParams.gameType} />
+		);
+	}
+
+	// Use separate component for Tower Defence
+	if (resolvedParams.gameType === 'towerdefence' && currentView === 'game') {
+		return (
+			<TowerDefenceGameScreen
+					gameId={roomId}
+					gameType={resolvedParams.gameType}
+					onBack={() => (window.location.href = '/')}
+				/>
 		);
 	}
 
