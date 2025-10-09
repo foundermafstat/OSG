@@ -57,10 +57,22 @@ io.on('connection', (socket) => {
 	// Создать новую комнату
 	socket.on('createRoom', ({ gameType, roomId, config }) => {
 		try {
-			const game = roomManager.createRoom(roomId, gameType, config);
+			let game;
+			let room = roomManager.getRoom(roomId);
+
+			// If room doesn't exist, create it
+			if (!room) {
+				game = roomManager.createRoom(roomId, gameType, config);
+				room = roomManager.getRoom(roomId);
+				console.log(`Room ${roomId} created with type ${gameType}`);
+			} else {
+				game = room.game;
+				console.log(
+					`Room ${roomId} already exists, connecting screen to existing room`
+				);
+			}
 
 			// Add the game screen socket to the room so it receives gameState
-			const room = roomManager.getRoom(roomId);
 			if (room) {
 				room.sockets.add(socket);
 				// Also track this socket-room relationship
@@ -72,9 +84,7 @@ io.on('connection', (socket) => {
 				gameType,
 				gameInfo: game.getGameInfo(),
 			});
-			console.log(
-				`Room ${roomId} created with type ${gameType}, screen connected`
-			);
+			console.log(`Screen ${socket.id} connected to room ${roomId}`);
 		} catch (error) {
 			socket.emit('error', { message: error.message });
 			console.error('Error creating room:', error);

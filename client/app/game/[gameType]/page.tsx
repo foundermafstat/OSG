@@ -84,6 +84,27 @@ const TowerDefenceMobileController = dynamic(
 	}
 );
 
+const QuizGameScreen = dynamic(() => import('@/components/QuizGameScreen'), {
+	ssr: false,
+	loading: () => (
+		<div className="min-h-screen bg-gray-900 flex items-center justify-center">
+			<div className="text-white text-xl">Loading quiz...</div>
+		</div>
+	),
+});
+
+const QuizMobileController = dynamic(
+	() => import('@/components/QuizMobileController'),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="min-h-screen bg-gray-900 flex items-center justify-center">
+				<div className="text-white text-xl">Loading controller...</div>
+			</div>
+		),
+	}
+);
+
 // Dynamic import only for QR code component (non-critical)
 const QRCodeDisplay = dynamic(
 	() => import('../../../components/QRCodeDisplay'),
@@ -195,15 +216,27 @@ export default function GamePage({ params }: PageProps) {
 			gameType: resolvedParams.gameType,
 		});
 
-			setRoomId(id);
-			if (mode === 'controller') {
-				setCurrentView('controller');
-			}
+		setRoomId(id);
+		if (mode === 'controller') {
+			setCurrentView('controller');
+		}
 		setIsInitialized(true);
 	}, [searchParams, resolvedParams.gameType]);
 
 	// Initialize Pixi.js and Socket
 	useEffect(() => {
+		// Skip PixiJS initialization for games with separate components
+		if (
+			resolvedParams.gameType === 'towerdefence' ||
+			resolvedParams.gameType === 'quiz'
+		) {
+			console.log(
+				'[GamePage] Skipping PixiJS init for',
+				resolvedParams.gameType
+			);
+			return;
+		}
+
 		if (!isInitialized || !roomId || currentView !== 'game' || appRef.current) {
 			console.log('[GamePage] Skip init:', {
 				isInitialized,
@@ -691,8 +724,17 @@ export default function GamePage({ params }: PageProps) {
 	if (currentView === 'controller') {
 		// Load controller dynamically based on game type
 		if (resolvedParams.gameType === 'towerdefence') {
-	return (
+			return (
 				<TowerDefenceMobileController
+					gameId={roomId}
+					gameType={resolvedParams.gameType}
+				/>
+			);
+		}
+
+		if (resolvedParams.gameType === 'quiz') {
+			return (
+				<QuizMobileController
 					gameId={roomId}
 					gameType={resolvedParams.gameType}
 				/>
@@ -713,10 +755,21 @@ export default function GamePage({ params }: PageProps) {
 	if (resolvedParams.gameType === 'towerdefence' && currentView === 'game') {
 		return (
 			<TowerDefenceGameScreen
-					gameId={roomId}
-					gameType={resolvedParams.gameType}
-					onBack={() => (window.location.href = '/')}
-				/>
+				gameId={roomId}
+				gameType={resolvedParams.gameType}
+				onBack={() => (window.location.href = '/')}
+			/>
+		);
+	}
+
+	// Use separate component for Quiz
+	if (resolvedParams.gameType === 'quiz' && currentView === 'game') {
+		return (
+			<QuizGameScreen
+				gameId={roomId}
+				gameType={resolvedParams.gameType}
+				onBack={() => (window.location.href = '/')}
+			/>
 		);
 	}
 

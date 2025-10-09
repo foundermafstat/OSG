@@ -1,12 +1,14 @@
 import { ShooterGame } from './shooterGame.js';
 import { RaceGame } from './raceGame.js';
 import { TowerDefenceGame } from './towerDefenceGame.js';
+import { QuizGame } from './quizGame.js';
 
 // Реестр доступных игр
 export const GAME_TYPES = {
 	SHOOTER: 'shooter',
 	RACE: 'race',
 	TOWERDEFENCE: 'towerdefence',
+	QUIZ: 'quiz',
 };
 
 // Фабрика для создания игр
@@ -18,6 +20,8 @@ export function createGame(gameType, gameId, config = {}) {
 			return new RaceGame(gameId, config);
 		case GAME_TYPES.TOWERDEFENCE:
 			return new TowerDefenceGame(gameId, config);
+		case GAME_TYPES.QUIZ:
+			return new QuizGame(gameId, config);
 		default:
 			throw new Error(`Unknown game type: ${gameType}`);
 	}
@@ -49,5 +53,14 @@ export const GAME_INFO = {
 		minPlayers: 1,
 		maxPlayers: 4,
 		icon: '🏰',
+	},
+	[GAME_TYPES.QUIZ]: {
+		id: GAME_TYPES.QUIZ,
+		name: 'Quiz Battle',
+		description:
+			'Test your knowledge in a multiplayer quiz game with time pressure',
+		minPlayers: 2,
+		maxPlayers: 8,
+		icon: '🧠',
 	},
 };

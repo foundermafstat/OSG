@@ -149,10 +149,10 @@ export default function Home() {
 								Turn any screen into a gaming arena
 							</p>
 						</div>
-						<p className="text-gray-300 text-xl max-w-3xl mx-auto leading-relaxed">
+						<p className="text-gray-300 max-w-3xl mx-auto leading-relaxed">
 							Your smartphone becomes a gamepad in 3 seconds.
 							<br />
-							<span className="text-green-400 font-semibold">
+							<span className=" font-semibold">
 								No downloads. No installations. Just scan and play.
 							</span>
 						</p>
@@ -899,7 +899,7 @@ export default function Home() {
 							<span className="font-medium">One Screen Games</span>
 						</div>
 						<p className="text-gray-500 text-sm">
-							Технологии: React, Next.js, PixiJS, Socket.IO, TypeScript
+							Technologies: React, Next.js, PixiJS, Socket.IO, TypeScript
 						</p>
 					</div>
 				</div>

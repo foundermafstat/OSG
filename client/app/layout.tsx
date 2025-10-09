@@ -13,6 +13,35 @@ export const metadata: Metadata = {
 	title: 'OSG - One Screen Games',
 	description:
 		'Transform any screen into an instant multiplayer arena. Your phone becomes the controller. No downloads. No installations. Just scan and play.',
+	keywords: [
+		'multiplayer games',
+		'mobile controller',
+		'party games',
+		'browser games',
+		'QR code gaming',
+		'instant gaming',
+		'no download games',
+	],
+	authors: [{ name: 'OSG Team' }],
+	icons: {
+		icon: '/logo-osg.jpg',
+		shortcut: '/logo-osg.jpg',
+		apple: '/logo-osg.jpg',
+	},
+	openGraph: {
+		title: 'OSG - One Screen Games',
+		description:
+			'Turn any screen into an instant multiplayer arena. Your phone becomes the controller.',
+		images: ['/logo-osg.jpg'],
+		type: 'website',
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'OSG - One Screen Games',
+		description:
+			'Turn any screen into an instant multiplayer arena. Your phone becomes the controller.',
+		images: ['/logo-osg.jpg'],
+	},
 };
 
 export default function RootLayout({
